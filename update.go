@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/Masterminds/semver/v3"
@@ -16,7 +15,7 @@ import (
 
 // UpdateTo downloads an executable from the source provider and replace current binary with the downloaded one.
 // It downloads a release asset via the source provider so this function is available for update releases on private repository.
-func (up *Updater) UpdateTo(ctx context.Context, rel *Release, cmdPath string) error {
+func (up *Updater) UpdateTo(ctx context.Context, rel *Release, relExe, cmdPath string) error {
 	if rel == nil {
 		return ErrInvalidRelease
 	}
@@ -33,12 +32,12 @@ func (up *Updater) UpdateTo(ctx context.Context, rel *Release, cmdPath string) e
 		}
 	}
 
-	return up.decompressAndUpdate(bytes.NewReader(data), rel.AssetName, rel.AssetURL, cmdPath)
+	return up.decompressAndUpdate(bytes.NewReader(data), rel.AssetURL, relExe, cmdPath)
 }
 
 // UpdateCommand updates a given command binary to the latest version.
 // 'current' is used to check the latest version against the current version.
-func (up *Updater) UpdateCommand(ctx context.Context, cmdPath string, current string, repository Repository) (*Release, error) {
+func (up *Updater) UpdateCommand(ctx context.Context, relExe, cmdPath string, current string, repository Repository) (*Release, error) {
 	version, err := semver.NewVersion(current)
 	if err != nil {
 		return nil, fmt.Errorf("incorrect version %q: %w", current, err)
@@ -74,7 +73,7 @@ func (up *Updater) UpdateCommand(ctx context.Context, cmdPath string, current st
 		return rel, nil
 	}
 	log.Printf("Will update %s to the latest version %s", cmdPath, rel.Version())
-	if err := up.UpdateTo(ctx, rel, cmdPath); err != nil {
+	if err := up.UpdateTo(ctx, rel, relExe, cmdPath); err != nil {
 		return nil, err
 	}
 	return rel, nil
@@ -82,17 +81,16 @@ func (up *Updater) UpdateCommand(ctx context.Context, cmdPath string, current st
 
 // UpdateSelf updates the running executable itself to the latest version.
 // 'current' is used to check the latest version against the current version.
-func (up *Updater) UpdateSelf(ctx context.Context, current string, repository Repository) (*Release, error) {
+func (up *Updater) UpdateSelf(ctx context.Context, relExe, current string, repository Repository) (*Release, error) {
 	cmdPath, err := internal.GetExecutablePath()
 	if err != nil {
 		return nil, err
 	}
-	return up.UpdateCommand(ctx, cmdPath, current, repository)
+	return up.UpdateCommand(ctx, relExe, cmdPath, current, repository)
 }
 
-func (up *Updater) decompressAndUpdate(src io.Reader, assetName, assetURL, cmdPath string) error {
-	_, cmd := filepath.Split(cmdPath)
-	asset, err := DecompressCommand(src, assetName, cmd, up.os, up.arch)
+func (up *Updater) decompressAndUpdate(src io.Reader, assetURL, relExe, cmdPath string) error {
+	asset, err := DecompressCommand(src, assetURL, relExe, up.os, up.arch)
 	if err != nil {
 		return err
 	}

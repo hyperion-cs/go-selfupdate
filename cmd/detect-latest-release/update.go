@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"path/filepath"
 	"runtime"
 
 	"github.com/creativeprojects/go-selfupdate"
@@ -26,11 +27,16 @@ func update(version string) error {
 		return nil
 	}
 
-	exe, err := selfupdate.ExecutablePath()
+	cmdPath, err := selfupdate.ExecutablePath()
 	if err != nil {
 		return fmt.Errorf("could not locate executable path: %w", err)
 	}
-	if err := selfupdate.UpdateTo(context.Background(), latest.AssetURL, latest.AssetName, exe); err != nil {
+
+	// In the new release, the binary file can have any name — this is set by the relExe.
+	// If it has the same name as the old one, you can get it like this:
+	_, relExe := filepath.Split(cmdPath)
+
+	if err := selfupdate.UpdateTo(context.Background(), latest.AssetURL, relExe, cmdPath); err != nil {
 		return fmt.Errorf("error occurred while updating binary: %w", err)
 	}
 	log.Printf("Successfully updated to version %s", latest.Version())

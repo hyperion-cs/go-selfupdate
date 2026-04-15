@@ -85,11 +85,16 @@ func update(version string) error {
 		return nil
 	}
 
-	exe, err := selfupdate.ExecutablePath()
+	cmdPath, err := selfupdate.ExecutablePath()
 	if err != nil {
-		return errors.New("could not locate executable path")
+		return fmt.Errorf("could not locate executable path: %w", err)
 	}
-	if err := selfupdate.UpdateTo(context.Background(), latest.AssetURL, latest.AssetName, exe); err != nil {
+
+    // In the new release, the binary file can have any name — this is set by the relExe.
+	// If it has the same name as the old one, you can get it like this:
+	_, relExe := filepath.Split(cmdPath)
+
+	if err := selfupdate.UpdateTo(context.Background(), latest.AssetURL, relExe, cmdPath); err != nil {
 		return fmt.Errorf("error occurred while updating binary: %w", err)
 	}
 	log.Printf("Successfully updated to version %s", latest.Version())
@@ -346,7 +351,7 @@ See [goreleaser documentation](https://goreleaser.com/scm/gitlab/#generic-packag
 ## Example:
 
 ```go
-func update() {
+func update() error {
 	source, err := selfupdate.NewGitLabSource(selfupdate.GitLabConfig{
 		BaseURL: "https://private.instance.on.gitlab.com/",
 	})
@@ -365,19 +370,25 @@ func update() {
 		log.Fatal(err)
 	}
 	if !found {
-		log.Print("Release not found")
-		return
+		return errors.New("release not found")
 	}
 	fmt.Printf("found release %s\n", release.Version())
 
-	exe, err := selfupdate.ExecutablePath()
+	cmdPath, err := selfupdate.ExecutablePath()
 	if err != nil {
 		return errors.New("could not locate executable path")
 	}
-	err = updater.UpdateTo(context.Background(), release, exe)
+
+	// In the new release, the binary file can have any name — this is set by the relExe.
+	// If it has the same name as the old one, you can get it like this:
+	_, relExe := filepath.Split(cmdPath)
+
+	err = updater.UpdateTo(context.Background(), release, relExe, cmdPath)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	return nil
 }
 ```
 
@@ -392,7 +403,7 @@ The HttpSource is designed to work with repositories built using [goreleaser-htt
 If your repository is at example.com/repo/project, then you'd use the following example.
 
 ```go
-func update() {
+func update() error {
 	source, err := selfupdate.NewHttpSource(selfupdate.HttpConfig{
 		BaseURL: "https://example.com/",
 	})
@@ -411,19 +422,25 @@ func update() {
 		log.Fatal(err)
 	}
 	if !found {
-		log.Print("Release not found")
-		return
+		return errors.New("release not found")
 	}
 	fmt.Printf("found release %s\n", release.Version())
 
-	exe, err := selfupdate.ExecutablePath()
+	cmdPath, err := selfupdate.ExecutablePath()
 	if err != nil {
 		return errors.New("could not locate executable path")
 	}
-	err = updater.UpdateTo(context.Background(), release, exe)
+
+	// In the new release, the binary file can have any name — this is set by the relExe.
+	// If it has the same name as the old one, you can get it like this:
+	_, relExe := filepath.Split(cmdPath)
+
+	err = updater.UpdateTo(context.Background(), release, relExe, cmdPath)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	return nil
 }
 ```
 

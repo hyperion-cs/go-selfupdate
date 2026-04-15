@@ -24,7 +24,7 @@ func DetectVersion(ctx context.Context, repository Repository, version string) (
 // This function is low-level API to update the binary. Because it does not use a source provider and downloads asset directly from the URL via HTTP,
 // this function is not available to update a release for private repositories.
 // cmdPath is a file path to command executable.
-func UpdateTo(ctx context.Context, assetURL, assetFileName, cmdPath string) error {
+func UpdateTo(ctx context.Context, assetURL, relExe, cmdPath string) error {
 	//nolint:contextcheck
 	up := DefaultUpdater()
 	src, err := downloadReleaseAssetFromURL(ctx, assetURL)
@@ -32,21 +32,21 @@ func UpdateTo(ctx context.Context, assetURL, assetFileName, cmdPath string) erro
 		return err
 	}
 	defer src.Close()
-	return up.decompressAndUpdate(src, assetFileName, assetURL, cmdPath)
+	return up.decompressAndUpdate(src, assetURL, relExe, cmdPath)
 }
 
 // UpdateCommand updates a given command binary to the latest version.
 // This function is a shortcut version of updater.UpdateCommand using a DefaultUpdater()
-func UpdateCommand(ctx context.Context, cmdPath string, current string, repository Repository) (*Release, error) {
+func UpdateCommand(ctx context.Context, relExe, cmdPath string, current string, repository Repository) (*Release, error) {
 	//nolint:contextcheck
-	return DefaultUpdater().UpdateCommand(ctx, cmdPath, current, repository)
+	return DefaultUpdater().UpdateCommand(ctx, relExe, cmdPath, current, repository)
 }
 
 // UpdateSelf updates the running executable itself to the latest version.
 // This function is a shortcut version of updater.UpdateSelf using a DefaultUpdater()
-func UpdateSelf(ctx context.Context, current string, repository Repository) (*Release, error) {
+func UpdateSelf(ctx context.Context, relExe, current string, repository Repository) (*Release, error) {
 	//nolint:contextcheck
-	return DefaultUpdater().UpdateSelf(ctx, current, repository)
+	return DefaultUpdater().UpdateSelf(ctx, relExe, current, repository)
 }
 
 func downloadReleaseAssetFromURL(ctx context.Context, url string) (rc io.ReadCloser, err error) {
