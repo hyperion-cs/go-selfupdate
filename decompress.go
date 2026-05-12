@@ -34,8 +34,16 @@ var (
 	semverPattern = `(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?`
 )
 
+type DecompressCommandOpt struct {
+	Src io.Reader
+	Url,
+	RelExe,
+	Os,
+	Arch string
+}
+
 // DecompressCommand decompresses the given source. Archive and compression format is
-// automatically detected from 'url' parameter, which represents the URL of asset,
+// automatically detected from 'opt.url' parameter, which represents the URL of asset,
 // or simply a filename (with an extension).
 // This returns a reader for the decompressed command given by 'url'. '.zip',
 // '.tar.gz', '.tar.xz', '.tgz', '.gz', '.bz2' and '.xz' are supported.
@@ -43,14 +51,14 @@ var (
 // These wrapped errors can be returned:
 //   - ErrCannotDecompressFile
 //   - ErrExecutableNotFoundInArchive
-func DecompressCommand(src io.Reader, url, relExe, os, arch string) (io.Reader, error) {
+func DecompressCommand(opt DecompressCommandOpt) (io.Reader, error) {
 	for _, fileType := range fileTypes {
-		if strings.HasSuffix(url, fileType.ext) {
-			return fileType.decompress(src, relExe, os, arch)
+		if strings.HasSuffix(opt.Url, fileType.ext) {
+			return fileType.decompress(opt.Src, opt.RelExe, opt.Os, opt.Arch)
 		}
 	}
 	log.Print("File is not compressed")
-	return src, nil
+	return opt.Src, nil
 }
 
 func unzip(src io.Reader, relExe, os, arch string) (io.Reader, error) {

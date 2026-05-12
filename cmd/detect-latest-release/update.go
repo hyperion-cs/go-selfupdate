@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"path/filepath"
 	"runtime"
 
 	"github.com/creativeprojects/go-selfupdate"
@@ -14,7 +13,10 @@ import (
 //
 //nolint:unused
 func update(version string) error {
-	latest, found, err := selfupdate.DetectLatest(context.Background(), selfupdate.ParseSlug("creativeprojects/resticprofile"))
+	latest, found, err := selfupdate.DetectLatest(
+		context.Background(),
+		selfupdate.DetectLatestOpt{Repository: selfupdate.ParseSlug("creativeprojects/resticprofile")},
+	)
 	if err != nil {
 		return fmt.Errorf("error occurred while detecting version: %w", err)
 	}
@@ -32,11 +34,9 @@ func update(version string) error {
 		return fmt.Errorf("could not locate executable path: %w", err)
 	}
 
-	// In the new release, the binary file can have any name — this is set by the relExe.
-	// If it has the same name as the old one, you can get it like this:
-	_, relExe := filepath.Split(cmdPath)
-
-	if err := selfupdate.UpdateTo(context.Background(), latest.AssetURL, relExe, cmdPath); err != nil {
+	// In the new release, the binary file can have any name — this is set by the selfupdate.UpdateToOpt.RelExe.
+	// If it's the same as the old one, then selfupdate.UpdateToOpt.RelExe should be empty.
+	if err := selfupdate.UpdateTo(context.Background(), selfupdate.UpdateToOpt{Rel: latest, CmdPath: cmdPath}); err != nil {
 		return fmt.Errorf("error occurred while updating binary: %w", err)
 	}
 	log.Printf("Successfully updated to version %s", latest.Version())

@@ -68,7 +68,7 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	latest, found, err := updater.DetectLatest(ctx, selfupdate.ParseSlug(slug))
+	latest, found, err := updater.DetectLatest(ctx, selfupdate.DetectLatestOpt{Repository: selfupdate.ParseSlug(slug)})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Error while detecting the latest version:", err)
 		os.Exit(1)
@@ -87,7 +87,7 @@ func main() {
 			os.Exit(1)
 		}
 	} else {
-		if err := updater.UpdateTo(ctx, latest, relExe, cmdPath); err != nil {
+		if err := updater.UpdateTo(ctx, selfupdate.UpdateToOpt{Rel: latest, RelExe: relExe, CmdPath: cmdPath}); err != nil {
 			fmt.Fprintf(os.Stderr, "Error while replacing the binary with %s: %s\n", latest.AssetURL, err)
 			os.Exit(1)
 		}
@@ -131,7 +131,13 @@ func installFrom(ctx context.Context, url, relExe, path string) error {
 	if res.StatusCode != http.StatusOK {
 		return fmt.Errorf("failed to download release binary from %s: Invalid response ", url)
 	}
-	executable, err := selfupdate.DecompressCommand(res.Body, url, relExe, runtime.GOOS, runtime.GOARCH)
+	executable, err := selfupdate.DecompressCommand(selfupdate.DecompressCommandOpt{
+		Src:    res.Body,
+		Url:    url,
+		RelExe: relExe,
+		Os:     runtime.GOOS,
+		Arch:   runtime.GOARCH,
+	})
 	if err != nil {
 		return fmt.Errorf("failed to decompress downloaded asset from %s: %s", url, err)
 	}
